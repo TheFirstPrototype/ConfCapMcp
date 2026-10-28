@@ -29,7 +29,11 @@ curl -s http://127.0.0.1:8787/healthz                          # {"ok":true}
 ## Publish with nginx
 1. DNS (Hostinger > deafassistant.com > DNS records): type `A`, name `mcp`, content = the server's IP (the same as the `api` record, 18.117.193.30), TTL 300. Wait until `dig +short mcp.deafassistant.com` shows it before running certbot.
 2. `sudo cp deploy/nginx-mcp.conf /etc/nginx/sites-available/confcap-mcp && sudo ln -s /etc/nginx/sites-available/confcap-mcp /etc/nginx/sites-enabled/`
-3. Add the `limit_req_zone` line from the top of that file to `/etc/nginx/conf.d/confcap-mcp-limit.conf`.
+3. Add the rate-limit zone. It must sit at the `http` level (not inside `server {}`), so it goes in its own file in `conf.d/`. Keep the single quotes so the shell does not expand `$binary_remote_addr`:
+   ```bash
+   echo 'limit_req_zone $binary_remote_addr zone=confcap_mcp:10m rate=5r/s;' | sudo tee /etc/nginx/conf.d/confcap-mcp-limit.conf
+   ```
+   If `nginx -t` then says `zone "confcap_mcp" is already bound`, the line exists twice: `sudo grep -r confcap_mcp /etc/nginx`. If it says `unknown "confcap_mcp" zone`, check that `/etc/nginx/nginx.conf` has `include /etc/nginx/conf.d/*.conf;` inside `http {}`.
 4. `sudo nginx -t && sudo systemctl reload nginx && sudo certbot --nginx -d mcp.deafassistant.com`
 
 ## Update
