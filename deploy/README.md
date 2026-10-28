@@ -13,7 +13,12 @@ node -v                      # needs >= 22; if missing: curl -fsSL https://deb.n
 ## Install (once)
 ```bash
 sudo useradd --system --home /opt/confcap-mcp --shell /usr/sbin/nologin confcap-mcp
-sudo git clone <repo url> /opt/confcap-mcp && cd /opt/confcap-mcp
+# The repo is private, so the server needs a read-only deploy key (a plain `sudo git clone https://...` has no credentials and fails):
+sudo ssh-keygen -t ed25519 -N "" -C confcap-mcp-deploy -f /root/.ssh/confcap_mcp_deploy
+sudo cat /root/.ssh/confcap_mcp_deploy.pub        # paste into GitHub: ConfCapMcp > Settings > Deploy keys > Add (leave "Allow write access" OFF)
+sudo GIT_SSH_COMMAND='ssh -i /root/.ssh/confcap_mcp_deploy -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new' \
+  git clone git@github.com:TheFirstPrototype/ConfCapMcp.git /opt/confcap-mcp && cd /opt/confcap-mcp
+sudo git config core.sshCommand 'ssh -i /root/.ssh/confcap_mcp_deploy -o IdentitiesOnly=yes'   # so "git pull" in Update works too
 sudo npm ci && sudo npm run build && sudo npm prune --omit=dev
 sudo chown -R root:root /opt/confcap-mcp                       # the service only needs to read it
 sudo cp deploy/confcap-mcp.service /etc/systemd/system/
@@ -22,7 +27,7 @@ curl -s http://127.0.0.1:8787/healthz                          # {"ok":true}
 ```
 
 ## Publish with nginx
-1. DNS: add an `A` record `mcp.deafassistant.com` pointing at the server (wherever deafassistant.com's DNS is managed).
+1. DNS (Hostinger > deafassistant.com > DNS records): type `A`, name `mcp`, content = the server's IP (the same as the `api` record, 18.117.193.30), TTL 300. Wait until `dig +short mcp.deafassistant.com` shows it before running certbot.
 2. `sudo cp deploy/nginx-mcp.conf /etc/nginx/sites-available/confcap-mcp && sudo ln -s /etc/nginx/sites-available/confcap-mcp /etc/nginx/sites-enabled/`
 3. Add the `limit_req_zone` line from the top of that file to `/etc/nginx/conf.d/confcap-mcp-limit.conf`.
 4. `sudo nginx -t && sudo systemctl reload nginx && sudo certbot --nginx -d mcp.deafassistant.com`
