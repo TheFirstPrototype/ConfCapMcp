@@ -22,6 +22,15 @@ function clampInt(value: number | undefined, fallback: number, min: number, max:
   return Math.min(max, Math.max(min, Math.trunc(value)));
 }
 
+/** The API keeps "isActivelyStreaming" true when a broadcaster stops without a final post (app closed, device slept). */
+const STALE_AFTER_SECONDS = 300;
+function freshness(body: { timestamp?: unknown; isActivelyStreaming?: unknown }) {
+  const at = Date.parse(String(body.timestamp ?? ""));
+  if (Number.isNaN(at)) return {};
+  const secondsSinceUpdate = Math.max(0, Math.round((Date.now() - at) / 1000));
+  return { secondsSinceUpdate, ...(body.isActivelyStreaming && secondsSinceUpdate > STALE_AFTER_SECONDS ? { likelyStopped: true } : {}) };
+}
+
 export class Tools {
   private ownStreams?: string[];
   /** The last text returned by get_live_captions per stream and language, so `changed` means "different from your previous call". */
@@ -94,6 +103,7 @@ export class Tools {
         outputLanguages: this.outputLanguages(body).map((l) => l.code),
         description: body.description ? untrusted(body.description) : "",
         lastUpdate: body.timestamp ?? null,
+        ...freshness(body),
       };
     });
   }
@@ -123,14 +133,17 @@ export class Tools {
           else return { streamName: name, state: "ok", error: "language not offered", available: ["source", ...options.map((o) => o.code)] };
         } else { text = body[match.field] ?? ""; language = match.code; }
       }
-      const truncated = text.length > maxChars;
-      if (truncated) text = text.slice(text.length - maxChars);
+      const totalChars = text.length;
+      const truncated = totalChars > maxChars;
+      if (truncated) text = text.slice(totalChars - maxChars);
       const memo = `${name}|${language}`;
       const changed = this.lastCaptions.get(memo) !== text;
       this.lastCaptions.set(memo, text);
       return {
         streamName: name, state: "ok", language, isActivelyStreaming: !!body.isActivelyStreaming,
         changed, truncated,
+        ...(truncated ? { totalChars, hint: `Only the newest ${maxChars} of ${totalChars} characters were returned. Call again with a larger maxChars (up to 50000) to read more. A session that is no longer live is only available in full if a transcript was saved (list_saved_transcripts).` } : {}),
+        ...freshness(body),
         cursor: wantsSource ? body.transcriptCursor ?? null : null,
         text: untrusted(text),
         note: UNTRUSTED_NOTE,

@@ -41,7 +41,7 @@ export function createServer(config: Config, api: ApiClient = new ApiClient(conf
     inputSchema: {
       streamName: stream,
       language: z.string().max(20).optional().describe("A language code the stream offers, or 'source' (default) for the spoken language."),
-      maxChars: z.number().int().min(100).max(50000).optional().describe("Most recent characters to return (default 4000)."),
+      maxChars: z.number().int().min(100).max(50000).optional().describe("Most recent characters to return (default 4000, up to 50000). Use a larger value to read a whole session."),
       cursor: z.number().int().min(0).optional().describe("The cursor from the previous call, for spoken-language text only."),
     }, annotations: READ_ONLY,
   }, (a) => run(() => tools.getLiveCaptions(a))());

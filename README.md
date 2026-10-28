@@ -42,7 +42,8 @@ Keep the key out of source control. See the [Developer API docs](https://confere
 The hosted endpoint is `https://mcp.deafassistant.com/mcp`. Create a key in the portal (step 1 above), then:
 
 - **Claude Code:** `claude mcp add --transport http confcap https://mcp.deafassistant.com/mcp --header "Authorization: Bearer cck_..."` (add `--header "X-Confcap-Stream: yourstream"` to set a default stream).
-- **Claude Desktop / any client with remote MCP and custom headers:** the same URL with the header `Authorization: Bearer cck_...`. Clients that only offer OAuth sign-in cannot send a static header yet.
+- **Claude Desktop (tested):** Settings > Connectors > Add > Add custom connector. Name `ConferenceCaptioning`, MCP server URL `https://mcp.deafassistant.com/mcp`, then Continue. It reports "no sign-in" (we do not use OAuth); open **Request headers**, add the header `Authorization` with the value `Bearer ` followed by your key, and click Add. Then start a chat and ask "what can the ConferenceCaptioning connector do".
+- **Any other client with remote MCP and custom headers:** the same URL with the header `Authorization: Bearer cck_...`. Clients that only offer OAuth sign-in cannot send a static header yet.
 - **Clients that only speak stdio:** `npx mcp-remote https://mcp.deafassistant.com/mcp --header "Authorization: Bearer cck_..."` bridges to the hosted URL.
 
 The key is sent on every request, so treat the client's config file like a password file. Check the connection with `HOSTED_URL=https://mcp.deafassistant.com node scripts/live-smoke.mjs` (needs a portal login and `FIREBASE_API_KEY`, see below).

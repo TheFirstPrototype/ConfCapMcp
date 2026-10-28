@@ -99,6 +99,30 @@ test("get_live_captions: maxChars keeps the newest text", async () => {
   await mock.close();
 });
 
+test("get_live_captions: says how much was cut off and how to read more", async () => {
+  const { tools, mock } = await make({ stream: () => liveBody({ transcript: "x".repeat(300) + "END" }) });
+  const r: any = await tools.getLiveCaptions({ maxChars: 100 });
+  assert.equal(r.totalChars, 303); assert.match(r.hint, /larger maxChars \(up to 50000\)/);
+  const whole: any = await tools.getLiveCaptions({ maxChars: 1000 });
+  assert.equal(whole.truncated, false); assert.equal(whole.hint, undefined);
+  await mock.close();
+});
+
+test("a stream still flagged as live but silent for minutes is reported as likely stopped, a fresh one is not", async () => {
+  const ago = (s: number) => new Date(Date.now() - s * 1000).toISOString();
+  const stale = await make({ stream: () => liveBody({ isActivelyStreaming: true, timestamp: ago(3 * 24 * 3600) }) });
+  const a: any = await stale.tools.getStreamStatus(); const b: any = await stale.tools.getLiveCaptions({});
+  for (const r of [a, b]) { assert.equal(r.likelyStopped, true); assert.ok(r.secondsSinceUpdate > 3 * 24 * 3600 - 5); }
+  await stale.mock.close();
+  const fresh = await make({ stream: () => liveBody({ isActivelyStreaming: true, timestamp: ago(5) }) });
+  const c: any = await fresh.tools.getStreamStatus();
+  assert.equal(c.likelyStopped, undefined); assert.ok(c.secondsSinceUpdate < 60);
+  await fresh.mock.close();
+  const over = await make({ stream: () => liveBody({ isActivelyStreaming: false, timestamp: ago(3 * 24 * 3600) }) });
+  assert.equal(((await over.tools.getStreamStatus()) as any).likelyStopped, undefined); // not flagged live, nothing to correct
+  await over.mock.close();
+});
+
 test("get_live_captions: a gated stream returns the state and never text", async () => {
   const { tools, mock } = await make({ stream: () => ({ roomName: "mtw", authRequired: true }) }, noKey);
   const r: any = await tools.getLiveCaptions({});
