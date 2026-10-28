@@ -49,7 +49,7 @@ The key is sent on every request, so treat the client's config file like a passw
 
 ### Listing in the MCP Registry
 
-`server.json` describes the hosted server for the [official MCP Registry](https://registry.modelcontextprotocol.io) (a remote, streamable-http server that needs an `Authorization` header). Publish or update it with `mcp-publisher login github && mcp-publisher publish` (install: `brew install mcp-publisher`); the registry checks that you control the `io.github.thefirstprototype` namespace and not the server URL. Keep `version` in step with `package.json`.
+`server.json` describes the hosted server for the [official MCP Registry](https://registry.modelcontextprotocol.io) (a remote, streamable-http server that needs an `Authorization` header). It is published by the "Publish to the MCP Registry" workflow (`.github/workflows/publish-registry.yml`) through GitHub's OIDC login, because an organization namespace (`io.github.thefirstprototype`) cannot be published from a laptop's `mcp-publisher login github`. Push a tag such as `v0.1.0` (the tag becomes the version), or run the workflow by hand. The registry checks that you control the namespace, not the server URL.
 
 ## Tools
 
