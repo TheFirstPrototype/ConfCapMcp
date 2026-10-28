@@ -2,8 +2,11 @@
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { loadConfig } from "./config.js";
 import { createServer } from "./server.js";
+import { startHttp } from "./http.js";
 
 async function main() {
+  // MCP_TRANSPORT=http runs the hosted, stateless endpoint (POST /mcp); the default is stdio for local clients.
+  if (process.env.MCP_TRANSPORT === "http") { startHttp(process.env); return; }
   let config;
   try { config = loadConfig(process.env); }
   catch (err) { console.error(`confcap-mcp: ${(err as Error).message}`); process.exit(1); }

@@ -17,7 +17,8 @@
     "build": "tsc",
     "test": "tsc && node --test --test-timeout=20000 dist/test/",
     "start": "node dist/src/index.js",
-    "live-smoke": "node scripts/live-smoke.mjs"
+    "live-smoke": "node scripts/live-smoke.mjs",
+    "start:http": "MCP_TRANSPORT=http node dist/src/index.js"
   },
   "license": "MIT",
   "dependencies": {

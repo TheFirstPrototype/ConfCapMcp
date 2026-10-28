@@ -1,9 +1,11 @@
 // Live smoke test: runs the built stdio server against the real API with a throwaway developer key, calls every tool
 // read-only, checks the key never appears in output, then deletes the key. See README ("Live smoke test").
 // Usage: npm run build && T_EMAIL=... T_PASS=... node scripts/live-smoke.mjs
-// Optional: API_BASE_URL (default https://api.deafassistant.com), SMOKE_STREAM (default: the account's only stream).
+// Optional: API_BASE_URL (default https://api.deafassistant.com), SMOKE_STREAM (default: the account's only stream),
+// HOSTED_URL (e.g. https://mcp.deafassistant.com or http://127.0.0.1:8787): test the hosted HTTP endpoint instead of the stdio server.
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { fileURLToPath } from "node:url";
 
 const API = (process.env.API_BASE_URL || "https://api.deafassistant.com").replace(/\/+$/, "");
@@ -30,7 +32,12 @@ try {
   const env = { ...process.env, CONFCAP_KEY: created.key, CONFCAP_API_URL: API };
   delete env.T_PASS; delete env.CONFCAP_STREAM; // the server never needs the password; start with no default stream
   client = new Client({ name: "smoke", version: "1" });
-  await client.connect(new StdioClientTransport({ command: "node", args: [SERVER], env }));
+  if (process.env.HOSTED_URL) {
+    await client.connect(new StreamableHTTPClientTransport(new URL(process.env.HOSTED_URL.replace(/\/+$/, "") + "/mcp"), { requestInit: { headers: { Authorization: `Bearer ${created.key}` } } }));
+    console.log("Testing the hosted endpoint", process.env.HOSTED_URL);
+  } else {
+    await client.connect(new StdioClientTransport({ command: "node", args: [SERVER], env }));
+  }
   const all = [];
   const call = async (name, args = {}) => { const r = await client.callTool({ name, arguments: args }); const text = r.content[0].text; all.push(text); return { error: !!r.isError, data: JSON.parse(text) }; };
 

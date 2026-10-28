@@ -1,0 +1,44 @@
+# systemd unit for the hosted MCP server. Install as /etc/systemd/system/confcap-mcp.service (see deploy/README.md).
+# It shares the box with the live caption API, so it is capped: if it ever misbehaves it is restarted, the API is not starved.
+[Unit]
+Description=ConferenceCaptioning MCP server (hosted, stateless)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=confcap-mcp
+Group=confcap-mcp
+WorkingDirectory=/opt/confcap-mcp
+Environment=NODE_ENV=production
+Environment=MCP_TRANSPORT=http
+Environment=HOST=127.0.0.1
+Environment=PORT=8787
+Environment=TRUST_PROXY=1
+Environment=RATE_PER_MINUTE=60
+# Optional: point at a different API (must be https, or localhost).
+# Environment=CONFCAP_API_URL=https://api.deafassistant.com
+ExecStart=/usr/bin/node --max-old-space-size=96 dist/src/index.js
+Restart=always
+RestartSec=3
+
+# Resource caps (this box has 1 vCPU and about 1 GB RAM shared with the API).
+MemoryHigh=110M
+MemoryMax=150M
+CPUQuota=20%
+TasksMax=64
+
+# Hardening: the process reads its own code and talks to the network, nothing else.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+SystemCallFilter=@system-service
+
+[Install]
+WantedBy=multi-user.target

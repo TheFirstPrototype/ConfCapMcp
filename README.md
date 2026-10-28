@@ -33,6 +33,10 @@ Claude Code: `claude mcp add confcap -e CONFCAP_KEY=cck_... -e CONFCAP_STREAM=yo
 
 Keep the key out of source control. See the [Developer API docs](https://conferencecaptioning.com/developers/).
 
+## Hosted mode
+
+`MCP_TRANSPORT=http PORT=8787 node dist/src/index.js` runs a stateless streamable-HTTP endpoint (`POST /mcp`, `GET /healthz`) instead of stdio. Each request carries its own key (`Authorization: Bearer cck_...`), optionally `X-Confcap-Stream` and `X-Confcap-Auth`. Nothing is stored; callers never share cached text; 60 requests a minute per caller. Installation as a systemd service behind nginx, with memory and CPU caps, is in [deploy/README.md](deploy/README.md).
+
 ## Tools
 
 | Tool | What it does | Needs a key |
@@ -60,7 +64,7 @@ Good to know:
 - Calls to one stream are spaced at one per second and overall at five per second; `429` and `5xx` are retried with backoff.
 - Two server instances never share cached text.
 
-## Live smoke test
+## Live smoke test (stdio, or `HOSTED_URL=https://... node scripts/live-smoke.mjs` for the hosted endpoint)
 
 Runs the built server against the real API with a throwaway key (created and deleted by the script), calls every tool read-only, and checks that neither the key nor the account uid appears in any output.
 
