@@ -1,6 +1,6 @@
 name: Publish to the MCP Registry
 
-# Publishes server.json to the official MCP Registry under the io.github.thefirstprototype namespace. It runs from here
+# Publishes server.json to the official MCP Registry under the io.github.TheFirstPrototype namespace. It runs from here
 # because an organization namespace needs a credential that can read org ownership, and GitHub Actions' OIDC login has one
 # (a laptop's `mcp-publisher login github` does not). No secret is stored.
 #
