@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.thefirstprototype/confcap",
+  "title": "ConferenceCaptioning",
+  "description": "Read live captions, saved transcripts and audience questions from your ConferenceCaptioning events.",
+  "repository": {
+    "url": "https://github.com/TheFirstPrototype/ConfCapMcp",
+    "source": "github"
+  },
+  "version": "0.1.0",
+  "websiteUrl": "https://conferencecaptioning.com/developers/",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.deafassistant.com/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Your developer API key as a bearer token: Bearer cck_... Create one in the ConferenceCaptioning portal under Advanced Settings (read-only; up to 2 per account).",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

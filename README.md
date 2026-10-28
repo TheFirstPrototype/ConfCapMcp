@@ -47,6 +47,10 @@ The hosted endpoint is `https://mcp.deafassistant.com/mcp`. Create a key in the 
 
 The key is sent on every request, so treat the client's config file like a password file. Check the connection with `HOSTED_URL=https://mcp.deafassistant.com node scripts/live-smoke.mjs` (needs a portal login and `FIREBASE_API_KEY`, see below).
 
+### Listing in the MCP Registry
+
+`server.json` describes the hosted server for the [official MCP Registry](https://registry.modelcontextprotocol.io) (a remote, streamable-http server that needs an `Authorization` header). Publish or update it with `mcp-publisher login github && mcp-publisher publish` (install: `brew install mcp-publisher`); the registry checks that you control the `io.github.thefirstprototype` namespace and not the server URL. Keep `version` in step with `package.json`.
+
 ## Tools
 
 | Tool | What it does | Needs a key |
