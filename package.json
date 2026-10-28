@@ -16,7 +16,8 @@
   "scripts": {
     "build": "tsc",
     "test": "tsc && node --test --test-timeout=20000 dist/test/",
-    "start": "node dist/src/index.js"
+    "start": "node dist/src/index.js",
+    "live-smoke": "node scripts/live-smoke.mjs"
   },
   "license": "MIT",
   "dependencies": {

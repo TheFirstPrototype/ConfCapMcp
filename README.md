@@ -60,6 +60,16 @@ Good to know:
 - Calls to one stream are spaced at one per second and overall at five per second; `429` and `5xx` are retried with backoff.
 - Two server instances never share cached text.
 
+## Live smoke test
+
+Runs the built server against the real API with a throwaway key (created and deleted by the script), calls every tool read-only, and checks that neither the key nor the account uid appears in any output.
+
+```bash
+npm run build
+T_EMAIL='<portal login of an account that owns a stream>' T_PASS='<password>' npm run live-smoke
+```
+Optional: `SMOKE_STREAM` (default: the account's first stream), `API_BASE_URL`. Exit code 0 means it passed. Never commit the password. The related checks are `ConfCapApi/scripts/live_developer_keys_check.py` (API) and `ConfCapPortal/e2e` (portal UI).
+
 ## Development
 
 `npm test` builds and runs the tests (a real local mock API, the protocol through the SDK's in-memory transport, and mutation-style checks described in `test/`). The server uses the v1.x SDK, which supports the 2025-11-25 MCP spec.
