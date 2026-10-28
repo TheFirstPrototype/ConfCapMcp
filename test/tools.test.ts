@@ -123,6 +123,39 @@ test("a stream still flagged as live but silent for minutes is reported as likel
   await over.mock.close();
 });
 
+test("get_session_overview: says what exists and what cannot be seen", async () => {
+  const none = await make({ stream: () => liveBody({ isActivelyStreaming: false, transcript: "y".repeat(500) }), history: [], questions: [] });
+  const a: any = await none.tools.getSessionOverview();
+  assert.equal(a.state, "ok"); assert.equal(a.liveFeed.characters, 500);
+  assert.equal(a.savedTranscripts.count, 0); assert.equal(a.questions.count, 0);
+  assert.ok(a.advice.some((t: string) => /No transcript was saved/.test(t) && /maxChars/.test(t) && /whole session/.test(t)));
+  assert.ok(a.advice.some((t: string) => /glossary terms/.test(t)), "points at the glossary");
+  assert.ok(!JSON.stringify(a).includes("yyyyyyyyyy"), "no caption text in an overview");
+  await none.mock.close();
+
+  const some = await make({ questions: [{ id: 1, createdAt: "2026-10-28T09:00:00", question: "Lunch?" }] });
+  const b: any = await some.tools.getSessionOverview();
+  assert.ok(b.savedTranscripts.count >= 1 && b.savedTranscripts.totalChars > 0 && b.savedTranscripts.latest.id);
+  assert.equal(b.questions.count, 1);
+  assert.ok(b.advice.some((t: string) => /list_saved_transcripts/.test(t)));
+  await some.mock.close();
+});
+
+test("get_session_overview: without a key it reads only the live feed and says why the rest is missing", async () => {
+  const { tools, mock } = await make({}, noKey);
+  const r: any = await tools.getSessionOverview();
+  assert.equal(r.savedTranscripts.available, false); assert.equal(r.questions.available, false);
+  assert.match(r.savedTranscripts.reason, /developer API key/);
+  await mock.close();
+});
+
+test("get_session_overview: a gated or unknown stream is a state, not captions", async () => {
+  const gated = await make({ stream: () => ({ authRequired: true }) });
+  assert.equal(((await gated.tools.getSessionOverview()) as any).state, "authRequired"); await gated.mock.close();
+  const unknown = await make({ stream: () => ({ timestamp: "0001-01-01T00:00:00" }) });
+  assert.equal(((await unknown.tools.getSessionOverview()) as any).state, "unknown"); await unknown.mock.close();
+});
+
 test("get_live_captions: a gated stream returns the state and never text", async () => {
   const { tools, mock } = await make({ stream: () => ({ roomName: "mtw", authRequired: true }) }, noKey);
   const r: any = await tools.getLiveCaptions({});

@@ -46,7 +46,7 @@ test("health check answers, other paths are 404 and GET /mcp is refused (statele
 test("works over HTTP end to end with the key from the Authorization header, and sends it on to the API", async () => {
   const { url, api } = await hosted(gate);
   const client = await connect(url, { Authorization: `Bearer ${KEY}` });
-  assert.equal((await client.listTools()).tools.length, 7);
+  assert.equal((await client.listTools()).tools.length, 8);
   assert.deepEqual(JSON.parse(textOf(await client.callTool({ name: "list_my_streams", arguments: {} }))), { streams: ["mtw"] });
   assert.match(textOf(await client.callTool({ name: "get_live_captions", arguments: {} })), /Hello everyone/); // default stream: the only one the key owns
   assert.ok(api.requests.some((r) => r.headers.authorization === `Bearer ${KEY}`));

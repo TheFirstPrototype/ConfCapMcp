@@ -24,10 +24,10 @@ const happy = (r: any, res: any) => {
 };
 const textOf = (r: any) => r.content[0].text as string;
 
-test("lists the seven read-only tools, each marked read-only", async () => {
+test("lists the eight read-only tools, each marked read-only", async () => {
   const { client, mock } = await connect(happy);
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map((t) => t.name).sort(), ["get_live_captions", "get_saved_transcript", "get_stream_context", "get_stream_status", "list_my_streams", "list_questions", "list_saved_transcripts"]);
+  assert.deepEqual(tools.map((t) => t.name).sort(), ["get_live_captions", "get_saved_transcript", "get_session_overview", "get_stream_context", "get_stream_status", "list_my_streams", "list_questions", "list_saved_transcripts"]);
   for (const t of tools) { assert.equal(t.annotations?.readOnlyHint, true, t.name); assert.equal(t.annotations?.destructiveHint, false, t.name); assert.match(t.description!, /sent to the AI model/, t.name); }
   await mock.close();
 });

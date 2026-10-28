@@ -151,6 +151,50 @@ export class Tools {
     });
   }
 
+  /** One call that says what exists for a stream and how to read it, so the assistant knows what it cannot see. */
+  async getSessionOverview(streamName?: string) {
+    const name = await this.resolveStream(streamName);
+    return this.guard(async () => {
+      const { body } = await this.fetchStream(name);
+      if (body?.authRequired) return { streamName: name, state: "authRequired", message: "This stream requires authentication; use the owner's developer API key (Authorization header) or the stream's secure code (X-Confcap-Auth)." };
+      if (body?.expired) return { streamName: name, state: "expired", message: body.message };
+      if (!body || String(body.timestamp ?? "").startsWith("0001") || (!body.transcript && !body.inputLanguage && !body.isActivelyStreaming)) {
+        return { streamName: name, state: "unknown", hint: "This stream has not started, or the name is wrong. Names are case-insensitive." };
+      }
+      const live = freshness(body);
+      const liveChars = String(body.transcript ?? "").length;
+      const advice: string[] = [];
+
+      let saved: unknown = { available: false, reason: "needs a developer API key" };
+      let questions: unknown = { available: false, reason: "needs a developer API key" };
+      if (this.config.key) {
+        const rows = await this.history(name, false);
+        saved = {
+          available: true, count: rows.length, totalChars: rows.reduce((n: number, r: any) => n + (r.transcript ?? "").length, 0),
+          latest: rows.length ? { id: rows[rows.length - 1].id, startTimestamp: rows[rows.length - 1].startTimestamp, endTimestamp: rows[rows.length - 1].endTimestamp } : null,
+        };
+        const q = await this.api.get("/question/GetStreamQuestions", { streamName: name }, { credential: "key" });
+        questions = { available: true, count: Array.isArray(q.body) ? q.body.length : 0 };
+        if (rows.length) advice.push("Saved transcripts exist: use list_saved_transcripts, then get_saved_transcript, to read a whole session.");
+        else advice.push(`No transcript was saved for this stream. The only text available is what the live feed holds now (${liveChars} characters): read it with get_live_captions and a large maxChars (up to 50000). Do not describe it as the whole session.`);
+      } else {
+        advice.push(`Without a developer API key only the live feed can be read (${liveChars} characters held now): use get_live_captions with a large maxChars (up to 50000).`);
+      }
+      const gl = await this.api.get("/glossary/GetGlossaryForStream", { streamName: name });
+      const glossaryTerms = Array.isArray(gl.body?.terms) ? gl.body.terms.length : 0;
+      if (glossaryTerms > 0) advice.push(`The stream has ${glossaryTerms} glossary terms: call get_stream_context and use them to correct mis-heard names and terms before quoting anyone.`);
+      else advice.push("The stream has no glossary, so names and terms in the captions may be mis-heard: say so when you quote them.");
+      if ((live as { likelyStopped?: boolean }).likelyStopped) advice.push("The stream is flagged live but has been silent for minutes: it has most likely stopped.");
+
+      return {
+        streamName: name, state: "ok", isActivelyStreaming: !!body.isActivelyStreaming, ...live, lastUpdate: body.timestamp ?? null,
+        inputLanguage: body.inputLanguage ?? null, outputLanguages: this.outputLanguages(body).map((l) => l.code),
+        liveFeed: { characters: liveChars },
+        savedTranscripts: saved, questions, glossaryTerms, advice,
+      };
+    });
+  }
+
   async getStreamContext(streamName?: string) {
     const name = await this.resolveStream(streamName);
     return this.guard(async () => {

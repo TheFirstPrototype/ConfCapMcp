@@ -42,11 +42,13 @@ try {
   const all = [];
   const call = async (name, args = {}) => { const r = await client.callTool({ name, arguments: args }); const text = r.content[0].text; all.push(text); return { error: !!r.isError, data: JSON.parse(text) }; };
 
-  check("seven tools are listed", (await client.listTools()).tools.length === 7);
+  check("eight tools are listed", (await client.listTools()).tools.length === 8);
   const mine = await call("list_my_streams");
   check("list_my_streams returns the account's streams", !mine.error && mine.data.streams.length > 0, mine.data);
   const stream = process.env.SMOKE_STREAM || mine.data.streams[0];
   console.log("Using stream", stream);
+  const overview = await call("get_session_overview", { streamName: stream });
+  check("get_session_overview answers with advice", !overview.error && Array.isArray(overview.data.advice) && overview.data.advice.length > 0, overview.data);
   const status = await call("get_stream_status", { streamName: stream });
   check("get_stream_status answers a known state", ["ok", "unknown", "authRequired", "expired"].includes(status.data.state), status.data);
   const caps = await call("get_live_captions", { streamName: stream, maxChars: 200 });

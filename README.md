@@ -57,9 +57,10 @@ The key is sent on every request, so treat the client's config file like a passw
 | Tool | What it does | Needs a key |
 | --- | --- | --- |
 | `list_my_streams` | The streams the key can read | yes |
+| `get_session_overview` | Start here: what exists for a stream (live or probably stopped, live text held, saved transcripts, questions, glossary) and what to do next | no (more with a key) |
 | `get_stream_status` | Live or not, languages, and whether it is readable (`ok`, `authRequired`, `expired`, `unknown`) | no |
 | `get_live_captions` | Newest caption text, spoken language or a translation; a `cursor` for new text only | no (yes for your secured streams) |
-| `get_stream_context` | Colour, logo and glossary terms | no |
+| `get_stream_context` | Colour, logo and glossary terms (use them to correct mis-heard names) | no |
 | `list_saved_transcripts` | Saved transcripts with title, note, times and length | yes |
 | `get_saved_transcript` | One transcript, paged | yes |
 | `list_questions` | Audience questions, oldest first | yes |
