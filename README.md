@@ -64,6 +64,8 @@ The key is sent on every request, so treat the client's config file like a passw
 | `list_saved_transcripts` | Saved transcripts with title, note, times and length | yes |
 | `get_saved_transcript` | One transcript, paged | yes |
 | `list_questions` | Audience questions, oldest first | yes |
+| `get_audience_summary` | Visits to the attendee page: totals, peak, cities, referrers, devices | yes |
+| `get_help_links` | Links to the how-to guides (static) | no |
 
 Also: resources `confcap://stream/{name}/status` and `confcap://stream/{name}/transcript/{id}`, and prompts `meeting_minutes`, `triage_questions`, `catch_me_up`, `translate_summary`.
 

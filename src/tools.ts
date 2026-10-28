@@ -283,4 +283,55 @@ export class Tools {
       return { streamName: name, count: filtered.length, questions: filtered.map((r) => ({ id: r.id, createdAt: r.createdAt, question: untrusted(r.question) })), note: UNTRUSTED_NOTE };
     });
   }
+
+  /** Visits to the stream's attendee page (the portal's Audience page), for the owner only. */
+  async getAudienceSummary(args: { streamName?: string; days?: number }) {
+    this.requireKey();
+    const name = await this.resolveStream(args.streamName);
+    const days = clampInt(args.days, 7, 1, 90);
+    return this.guard(async () => {
+      const res = await this.api.get("/analytics/StreamSummary", { stream: name, days }, { credential: "key" });
+      if (res.status === 404 || res.status === 401) {
+        await this.assertKeyWorks();
+        throw new ToolError("This stream was not found for your account.");
+      }
+      if (res.status !== 200) throw new ToolError(`The API could not build the summary (${res.status}).`);
+      const b = res.body ?? {};
+      const trend: { bucket: string; hits: number }[] = Array.isArray(b.trend) ? b.trend : [];
+      const peak = trend.reduce<{ bucket: string; hits: number } | null>((best, p) => (p.hits > 0 && (!best || p.hits > best.hits) ? p : best), null);
+      const top = (rows: any) => (Array.isArray(rows) ? rows.slice(0, 10).map((r: any) => ({ key: String(r.key), hits: r.hits })) : []);
+      return {
+        streamName: name, days, bucket: b.bucket ?? null, firstHit: b.firstHit ?? null, lastHit: b.lastHit ?? null,
+        totalVisits: b.totalHits ?? 0, uniqueVisitors: b.uniqueVisitors ?? 0,
+        newVisitorVisits: b.newVisitorHits ?? 0, returningVisitorVisits: b.returningVisitorHits ?? 0,
+        fromReferrals: b.referredHits ?? 0, direct: b.directHits ?? 0, peak, trend,
+        topCities: top(b.topCities), topDeviceTypes: top(b.topDeviceTypes), topOperatingSystems: top(b.topOperatingSystems), topBrowsers: top(b.topBrowsers),
+        // Referrer addresses come from other websites, so they are wrapped like any other outside text.
+        topReferrals: top(b.topReferrals).map((r: { key: string; hits: number }) => ({ key: untrusted(r.key), hits: r.hits })),
+        note: "A visit is one load of the attendee page (a refresh counts again), not a person and not time spent watching. uniqueVisitors counts browsers, and a person on two devices counts twice. Sharing a link by QR code or a messaging app shows up as direct. " + UNTRUSTED_NOTE,
+      };
+    });
+  }
+
+  /** Guides on the website. Static on purpose: no network call, nothing from those pages reaches the model. */
+  getHelpLinks() {
+    return {
+      note: "Links to the ConferenceCaptioning how-to guides. Open them for setup steps; this server does not fetch them.",
+      guides: HELP_LINKS,
+    };
+  }
 }
+
+export const HELP_LINKS = [
+  { topic: "Ask an AI assistant about your event (this MCP server)", url: "https://conferencecaptioning.com/blog/ask-your-ai-assistant-about-your-event-mcp-server/" },
+  { topic: "Developer API keys and the developer docs", url: "https://conferencecaptioning.com/developers/" },
+  { topic: "Add live captions and translations to OBS, no internet required", url: "https://conferencecaptioning.com/blog/how-to-add-live-captions-translations-to-obs/" },
+  { topic: "Add live captions and translations to ProPresenter", url: "https://conferencecaptioning.com/blog/how-to-add-live-captions-translations-to-propresenter/" },
+  { topic: "Live captions for any slide deck presentation", url: "https://conferencecaptioning.com/blog/live-captions-translations-for-any-slide-deck-presentation/" },
+  { topic: "Control captions with Stream Deck and Bitfocus Companion", url: "https://conferencecaptioning.com/blog/how-to-control-live-captions-with-stream-deck-bitfocus-companion/" },
+  { topic: "Zero-downtime captions with hot failover (backup device)", url: "https://conferencecaptioning.com/blog/zero-downtime-live-captions-hot-failover-redundancy/" },
+  { topic: "Set a static local IP on a Mac for AV networks", url: "https://conferencecaptioning.com/blog/how-to-set-a-static-local-ip-address-on-mac-av/" },
+  { topic: "Build a local translation server on a Mac mini", url: "https://conferencecaptioning.com/blog/how-to-build-a-local-translation-server-on-mac-mini/" },
+  { topic: "Chrome extension with on-device AI (Windows and other computers)", url: "https://conferencecaptioning.com/blog/conference-captioning-chrome-extension-on-device-ai/" },
+  { topic: "Everything in one file, for AI agents", url: "https://conferencecaptioning.com/llms-full.txt" },
+];

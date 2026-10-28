@@ -74,6 +74,16 @@ export function createServer(config: Config, api: ApiClient = new ApiClient(conf
     inputSchema: { streamName: stream, since: z.string().max(40).optional().describe("Only questions at or after this ISO date-time.") }, annotations: READ_ONLY,
   }, (a) => run(() => tools.listQuestions(a))());
 
+  server.registerTool("get_audience_summary", {
+    description: "How many people opened the stream's attendee page: visits, unique browsers, new vs returning, peak hour or day, top cities, referrers, devices. Page loads only, not people or watch time. Needs a developer API key. " + PRIVACY,
+    inputSchema: { streamName: stream, days: z.number().int().min(1).max(90).optional().describe("Look back this many days (default 7).") }, annotations: READ_ONLY,
+  }, (a) => run(() => tools.getAudienceSummary(a))());
+
+  server.registerTool("get_help_links", {
+    description: "Links to the ConferenceCaptioning how-to guides (OBS, ProPresenter, slide decks, Stream Deck, failover, static IP, local translation server, Chrome extension). Use it when the user asks how to set something up. Static list, no network call. " + PRIVACY,
+    inputSchema: {}, annotations: READ_ONLY,
+  }, () => run(async () => tools.getHelpLinks())());
+
   // Resources: the same data for clients that attach files instead of calling tools.
   server.registerResource("stream-status", new ResourceTemplate("confcap://stream/{name}/status", { list: undefined }),
     { title: "Stream status", description: "Live state of a stream, as JSON.", mimeType: "application/json" },

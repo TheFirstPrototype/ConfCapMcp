@@ -42,7 +42,7 @@ try {
   const all = [];
   const call = async (name, args = {}) => { const r = await client.callTool({ name, arguments: args }); const text = r.content[0].text; all.push(text); return { error: !!r.isError, data: JSON.parse(text) }; };
 
-  check("eight tools are listed", (await client.listTools()).tools.length === 8);
+  check("ten tools are listed", (await client.listTools()).tools.length === 10);
   const mine = await call("list_my_streams");
   check("list_my_streams returns the account's streams", !mine.error && mine.data.streams.length > 0, mine.data);
   const stream = process.env.SMOKE_STREAM || mine.data.streams[0];
@@ -58,6 +58,8 @@ try {
   const saved = await call("list_saved_transcripts", { streamName: stream, includeHidden: true });
   check("list_saved_transcripts answers", !saved.error && Array.isArray(saved.data.transcripts), saved.data);
   if (saved.data.transcripts?.length) check("get_saved_transcript answers", !(await call("get_saved_transcript", { streamName: stream, id: saved.data.transcripts[0].id, limit: 1000 })).error);
+  const aud = await call("get_audience_summary", { streamName: stream });
+  check("get_audience_summary answers", !aud.error && typeof aud.data.totalVisits === "number", aud.data);
   const qs = await call("list_questions", { streamName: stream });
   check("list_questions answers", !qs.error && Array.isArray(qs.data.questions), qs.data);
   const wrong = await call("get_saved_transcript", { streamName: stream, id: 999999999 });
