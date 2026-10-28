@@ -35,7 +35,7 @@ Keep the key out of source control. See the [Developer API docs](https://confere
 
 ## Hosted mode
 
-`MCP_TRANSPORT=http PORT=8787 node dist/src/index.js` runs a stateless streamable-HTTP endpoint (`POST /mcp`, `GET /healthz`) instead of stdio. Each request carries its own key (`Authorization: Bearer cck_...`), optionally `X-Confcap-Stream` and `X-Confcap-Auth`. Nothing is stored; callers never share cached text; 60 requests a minute per caller. Installation as a systemd service behind nginx, with memory and CPU caps, is in [deploy/README.md](deploy/README.md).
+`MCP_TRANSPORT=http PORT=8787 node dist/src/index.js` runs a stateless streamable-HTTP endpoint (`POST /mcp`, `GET /healthz`) instead of stdio. Each request carries its own key (`Authorization: Bearer cck_...`), optionally `X-Confcap-Stream` and `X-Confcap-Auth`. Nothing is stored; callers never share cached text; 60 requests a minute per caller. Self-hosting as a systemd service behind nginx, with memory and CPU caps, is in [deploy/README.md](deploy/README.md).
 
 ### Connect a client to the hosted server (nothing to install)
 
@@ -45,7 +45,7 @@ The hosted endpoint is `https://mcp.deafassistant.com/mcp`. Create a key in the 
 - **Claude Desktop / any client with remote MCP and custom headers:** the same URL with the header `Authorization: Bearer cck_...`. Clients that only offer OAuth sign-in cannot send a static header yet.
 - **Clients that only speak stdio:** `npx mcp-remote https://mcp.deafassistant.com/mcp --header "Authorization: Bearer cck_..."` bridges to the hosted URL.
 
-The key is sent on every request, so treat the client's config file like a password file. Check the connection with `HOSTED_URL=https://mcp.deafassistant.com node scripts/live-smoke.mjs` (needs a portal login, see below).
+The key is sent on every request, so treat the client's config file like a password file. Check the connection with `HOSTED_URL=https://mcp.deafassistant.com node scripts/live-smoke.mjs` (needs a portal login and `FIREBASE_API_KEY`, see below).
 
 ## Tools
 
@@ -80,7 +80,7 @@ Runs the built server against the real API with a throwaway key (created and del
 
 ```bash
 npm run build
-T_EMAIL='<portal login of an account that owns a stream>' T_PASS='<password>' npm run live-smoke
+FIREBASE_API_KEY='portal Firebase web apiKey' T_EMAIL='<portal login of an account that owns a stream>' T_PASS='<password>' npm run live-smoke
 ```
 Optional: `SMOKE_STREAM` (default: the account's first stream), `API_BASE_URL`. Exit code 0 means it passed. Never commit the password. The related checks are `ConfCapApi/scripts/live_developer_keys_check.py` (API) and `ConfCapPortal/e2e` (portal UI).
 

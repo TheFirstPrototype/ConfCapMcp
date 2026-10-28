@@ -1,6 +1,6 @@
 // Live smoke test: runs the built stdio server against the real API with a throwaway developer key, calls every tool
 // read-only, checks the key never appears in output, then deletes the key. See README ("Live smoke test").
-// Usage: npm run build && T_EMAIL=... T_PASS=... node scripts/live-smoke.mjs
+// Usage: npm run build && FIREBASE_API_KEY=... T_EMAIL=... T_PASS=... node scripts/live-smoke.mjs
 // Optional: API_BASE_URL (default https://api.deafassistant.com), SMOKE_STREAM (default: the account's only stream),
 // HOSTED_URL (e.g. https://mcp.deafassistant.com or http://127.0.0.1:8787): test the hosted HTTP endpoint instead of the stdio server.
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -9,9 +9,10 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { fileURLToPath } from "node:url";
 
 const API = (process.env.API_BASE_URL || "https://api.deafassistant.com").replace(/\/+$/, "");
-const FIREBASE_KEY = process.env.FIREBASE_API_KEY || "AIzaSyCsl1BRFkZNJRnIjeyUAR1l0VRSmgccyzM"; // the portal's public web key
+const FIREBASE_KEY = process.env.FIREBASE_API_KEY; // the portal's public web key (find it in the portal's firebase config)
 const { T_EMAIL, T_PASS } = process.env;
 if (!T_EMAIL || !T_PASS) { console.error("Set T_EMAIL and T_PASS (a portal login for the account that owns a stream)."); process.exit(2); }
+if (!FIREBASE_KEY) { console.error("Set FIREBASE_API_KEY (the portal's Firebase web API key, the apiKey in its firebase config)."); process.exit(2); }
 const SERVER = fileURLToPath(new URL("../dist/src/index.js", import.meta.url));
 
 const failures = [];
