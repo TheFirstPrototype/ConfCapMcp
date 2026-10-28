@@ -9,6 +9,8 @@ export interface Config {
   auth?: string;
   /** Default stream name. */
   stream?: string;
+  /** True for the hosted HTTP server: the key arrives in the Authorization header, not in an environment variable. */
+  hosted?: boolean;
 }
 
 /** Reads configuration from environment variables. Credentials are never tool arguments the model can fill in. */

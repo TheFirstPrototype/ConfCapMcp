@@ -59,6 +59,9 @@ test("without a key only public data works, and owner tools say a key is needed"
   assert.match(textOf(await client.callTool({ name: "get_live_captions", arguments: {} })), /authRequired/);
   const r: any = await client.callTool({ name: "list_saved_transcripts", arguments: {} });
   assert.equal(r.isError, true); assert.match(textOf(r), /developer API key is required/);
+  // the hosted server must tell the person to send a header, never to set an environment variable they cannot reach
+  assert.match(textOf(r), /Authorization: Bearer cck_/); assert.match(textOf(r), /claude mcp add --transport http/); assert.doesNotMatch(textOf(r), /CONFCAP_KEY/);
+  assert.match(textOf(await client.callTool({ name: "get_live_captions", arguments: {} })), /X-Confcap-Auth/);
   await client.close();
 });
 

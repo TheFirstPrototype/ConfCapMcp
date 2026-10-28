@@ -14,6 +14,7 @@ export class ToolError extends Error {
 }
 
 const KEY_REQUIRED = "A developer API key is required for this tool. Create one in the portal (Advanced Settings) and set CONFCAP_KEY.";
+const KEY_REQUIRED_HOSTED = "A developer API key is required for this tool, and this connection did not send one. Create a key in the portal (Advanced Settings), then add it to this MCP server's connection as the header \"Authorization: Bearer cck_...\". In Claude Code: claude mcp add --transport http confcap https://mcp.deafassistant.com/mcp --header \"Authorization: Bearer cck_...\" (run it before starting Claude Code, or reconnect from /mcp afterwards).";
 const KEY_INVALID = "The developer API key is missing, invalid or was deleted. Create a new one in the portal (Advanced Settings).";
 
 function clampInt(value: number | undefined, fallback: number, min: number, max: number) {
@@ -27,7 +28,7 @@ export class Tools {
   private lastCaptions = new Map<string, string>();
   constructor(private api: ApiClient, private config: Config) {}
 
-  private requireKey() { if (!this.config.key) throw new ToolError(KEY_REQUIRED); }
+  private requireKey() { if (!this.config.key) throw new ToolError(this.config.hosted ? KEY_REQUIRED_HOSTED : KEY_REQUIRED); }
 
   private async guard<T>(fn: () => Promise<T>): Promise<T> {
     try { return await fn(); }
@@ -81,7 +82,7 @@ export class Tools {
     const name = await this.resolveStream(streamName);
     return this.guard(async () => {
       const { body } = await this.fetchStream(name);
-      if (body?.authRequired) return { streamName: name, state: "authRequired", message: "This stream requires authentication. Set CONFCAP_AUTH to its secure code, or CONFCAP_KEY to the owner's developer API key." };
+      if (body?.authRequired) return { streamName: name, state: "authRequired", message: this.config.hosted ? "This stream requires authentication. Send its secure code in the X-Confcap-Auth header, or the owner's developer API key in the Authorization header." : "This stream requires authentication. Set CONFCAP_AUTH to its secure code, or CONFCAP_KEY to the owner's developer API key." };
       if (body?.expired) return { streamName: name, state: "expired", message: body.message };
       const unknown = !body || String(body.timestamp ?? "").startsWith("0001") || (!body.transcript && !body.inputLanguage && !body.isActivelyStreaming);
       if (unknown) return { streamName: name, state: "unknown", hint: "This stream has not started, or the name is wrong. Names are case-insensitive." };
@@ -104,7 +105,7 @@ export class Tools {
       const wantsSource = !args.language || args.language.toLowerCase() === "source";
       const res = await this.fetchStream(name, wantsSource ? args.cursor : undefined);
       const body = res.body;
-      if (body?.authRequired) return { streamName: name, state: "authRequired", message: "This stream requires authentication; no captions are returned. Set CONFCAP_AUTH or CONFCAP_KEY." };
+      if (body?.authRequired) return { streamName: name, state: "authRequired", message: this.config.hosted ? "This stream requires authentication; no captions are returned. Send X-Confcap-Auth (its secure code) or the owner's developer API key in the Authorization header." : "This stream requires authentication; no captions are returned. Set CONFCAP_AUTH or CONFCAP_KEY." };
       if (body?.expired) return { streamName: name, state: "expired", message: body.message };
       if (!body || String(body.timestamp ?? "").startsWith("0001")) return { streamName: name, state: "unknown", hint: "This stream has not started, or the name is wrong." };
 

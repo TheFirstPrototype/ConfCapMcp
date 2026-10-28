@@ -90,7 +90,7 @@ export function createHttpApp(options: HttpOptions = {}) {
       if (!allowed(caller)) return send(res, 429, { error: "Too many requests. Slow down." }, { "Retry-After": "30" });
 
       const config: Config = {
-        baseUrl, key: bearer,
+        baseUrl, key: bearer, hosted: true,
         auth: String(req.headers["x-confcap-auth"] ?? "").trim() || undefined,
         stream: String(req.headers["x-confcap-stream"] ?? "").trim().toLowerCase().slice(0, 100) || undefined,
       };
