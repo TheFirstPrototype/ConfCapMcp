@@ -1,0 +1,43 @@
+name: Test and release
+
+# Every push and pull request is built and tested. When a push to main passes, the commit is copied to the `production`
+# branch; the server watches that branch (deploy/confcap-mcp-update.timer) and updates itself within a couple of minutes.
+# No SSH, no open port and no server secret is involved.
+#
+# Want a click before anything reaches production? Settings -> Environments -> production -> Required reviewers.
+# Roll back: push an older commit to production (git push -f origin <good-sha>:production); the server follows.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  release:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Point production at this commit
+        run: git push --force origin "${GITHUB_SHA}:refs/heads/production"

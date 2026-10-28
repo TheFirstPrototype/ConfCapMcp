@@ -1,0 +1,11 @@
+# Install as /etc/systemd/system/confcap-mcp-update.timer, then: sudo systemctl enable --now confcap-mcp-update.timer
+[Unit]
+Description=Check for a new MCP server version every 2 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=2min
+RandomizedDelaySec=15
+
+[Install]
+WantedBy=timers.target

@@ -36,10 +36,27 @@ curl -s http://127.0.0.1:8787/healthz                          # {"ok":true}
    If `nginx -t` then says `zone "confcap_mcp" is already bound`, the line exists twice: `sudo grep -r confcap_mcp /etc/nginx`. If it says `unknown "confcap_mcp" zone`, check that `/etc/nginx/nginx.conf` has `include /etc/nginx/conf.d/*.conf;` inside `http {}`.
 4. `sudo nginx -t && sudo systemctl reload nginx && sudo certbot --nginx -d mcp.deafassistant.com`
 
-## Update
+## Update (automatic, no SSH)
+A push to `main` is built and tested by GitHub Actions (`.github/workflows/ci.yml`). If the tests pass, the workflow points the `production` branch at that commit. The server runs `deploy/update.sh` every 2 minutes (a systemd timer); when `production` has moved it pulls, rebuilds, restarts the service and checks `/healthz`. If the build or the health check fails it puts the previous version back, so a bad commit cannot leave the server down. Nothing connects into the server: it only reads from GitHub with the read-only deploy key.
+
+One-time setup on the server (after the install above):
 ```bash
-cd /opt/confcap-mcp && sudo git pull --ff-only && sudo npm ci && sudo npm run build && sudo npm prune --omit=dev && sudo systemctl restart confcap-mcp
+cd /opt/confcap-mcp && sudo git fetch origin production && sudo git checkout -B production origin/production
+sudo cp deploy/confcap-mcp-update.service deploy/confcap-mcp-update.timer /etc/systemd/system/
+sudo chmod +x deploy/update.sh
+sudo systemctl daemon-reload && sudo systemctl enable --now confcap-mcp-update.timer
+systemctl list-timers confcap-mcp-update.timer          # shows the next run
 ```
+(The first push to `main` after adding the workflow creates the `production` branch; until then `git fetch origin production` fails.)
+
+Day to day:
+- Watch it: `journalctl -u confcap-mcp-update -n 30` (lines start with `[confcap-mcp-update]`). Update right now: `sudo systemctl start confcap-mcp-update`.
+- Roll back: `git push -f origin <good-commit>:production` from anywhere. The server follows within 2 minutes.
+- Want an approval click before anything goes live? GitHub: Settings > Environments > production > Required reviewers.
+- Pause deploys: `sudo systemctl stop confcap-mcp-update.timer`.
+- Test the update script itself (no server needed): `bash deploy/test-update.sh`.
+
+Manual update, if you ever need it: `cd /opt/confcap-mcp && sudo ./deploy/update.sh`.
 
 ## Check it works from anywhere
 ```bash

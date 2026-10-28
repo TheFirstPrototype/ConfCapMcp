@@ -1,0 +1,15 @@
+# Install as /etc/systemd/system/confcap-mcp-update.service (see deploy/README.md). Started by confcap-mcp-update.timer.
+[Unit]
+Description=Update the hosted MCP server from the production branch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/confcap-mcp/deploy/update.sh
+# The build shares the box with the live caption API: run it at low priority and cap it.
+Nice=15
+IOSchedulingClass=idle
+CPUQuota=60%
+MemoryMax=450M
+TimeoutStartSec=600
