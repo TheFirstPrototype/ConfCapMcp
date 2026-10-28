@@ -1,0 +1,30 @@
+{
+  "name": "confcap-mcp",
+  "version": "0.1.0",
+  "description": "Read-only MCP server for ConferenceCaptioning: live captions, saved transcripts and audience questions.",
+  "type": "module",
+  "bin": {
+    "confcap-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "tsc && node --test --test-timeout=20000 dist/test/",
+    "start": "node dist/src/index.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.0",
+    "typescript": "^7.0.2"
+  }
+}
