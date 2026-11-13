@@ -28,7 +28,7 @@ test("lists the ten read-only tools, each marked read-only", async () => {
   const { client, mock } = await connect(happy);
   const { tools } = await client.listTools();
   assert.deepEqual(tools.map((t) => t.name).sort(), ["get_audience_summary", "get_help_links", "get_live_captions", "get_saved_transcript", "get_session_overview", "get_stream_context", "get_stream_status", "list_my_streams", "list_questions", "list_saved_transcripts"]);
-  for (const t of tools) { assert.equal(t.annotations?.readOnlyHint, true, t.name); assert.equal(t.annotations?.destructiveHint, false, t.name); assert.match(t.description!, /sent to the AI model/, t.name); }
+  for (const t of tools) { assert.equal(t.annotations?.readOnlyHint, true, t.name); assert.equal(t.annotations?.destructiveHint, false, t.name); assert.match(t.annotations?.title ?? "", /^[A-Z][A-Za-z]*( [A-Z][A-Za-z]*)*$/, t.name); assert.match(t.description!, /sent to the AI model/, t.name); }
   await mock.close();
 });
 
